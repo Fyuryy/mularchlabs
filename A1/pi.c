@@ -40,23 +40,24 @@ int main(int argc, const char *argv[])
 double calculate_pi(int num_threads, int samples)
 {
     double pi;
-
+      
 #pragma omp parallel num_threads(num_threads)
     {
-       
+
+        rand_gen r = init_rand();
         //*Number of samples that will be taken care by each thread
-        double local_samples = samples / num_threads;
+        double local_samples = samples / num_threads; 
 
         //*seed is the variable where we'll stock the random number, who we'll divide by RAND_MAX to have smth between 0 and 1
-        int seed = 0;
+        
         //*inside's gonna keep count of the points inside the cercle
         int inside = 0;
 
         for (int i = 0; i < local_samples; i++)
         {
             //*Compute x and y coords
-            double x = (double)rand_r(&seed) / RAND_MAX;
-            double y = (double)rand_r(&seed) / RAND_MAX;
+            double x = next_rand(r);
+            double y = next_rand(r);
 
             double distance = x * x + y * y;
 

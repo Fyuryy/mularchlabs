@@ -46,27 +46,41 @@ double integrate(int num_threads, int samples, int a, int b, double (*f)(double)
 {
     double integral = 0.0;
 
-#pragma omp parallel num_threads(num_threads) 
+    if (num_threads == 1)
     {
-        double inside = 0.0;
-        double s = 0.0;
+        // No need to create inner parallel section when using only one thread
         rand_gen r = init_rand();
 
-        double local_samples = samples / num_threads;
-
-#pragma omp parallel for
-    for (int i = 0; i < (int)local_samples; i++)
-    {
-        double x = next_rand(r) * (b - a) + a;
-        s += f(x) * (b - a);
+        for (int i = 0; i < samples; i++)
+        {
+            double x = next_rand(r) * (b - a) + a;
+            integral += f(x) * (b - a);
+        }
     }
+    else
+    {
+        
+#pragma omp parallel num_threads(num_threads) 
+        {
+            double inside = 0.0;
+            double s = 0.0;
+            rand_gen r = init_rand();
+
+            double local_samples = samples / num_threads;
+
+            for (int i = 0; i < (int)local_samples; i++)
+            {
+                double x = next_rand(r) * (b - a) + a;
+                s += f(x) * (b - a);
+            }
 
 #pragma omp critical
-    {
-        integral += s;
-    }
+            {
+                integral += s;
+            }
+        }
     }
 
-integral = integral / samples;
-return integral;
+    integral = integral / samples;
+    return integral;
 }
