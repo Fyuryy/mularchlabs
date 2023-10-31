@@ -1,0 +1,5 @@
+2023.10.31 16:38:10 INFO  Started: Metals version 1.1.0 in folders '/home/fyury/Desktop/mularch/mularchlabs/A2/A2' for client Visual Studio Code 1.83.1.[0m
+2023.10.31 16:38:13 WARN  Build server is not auto-connectable.[0m
+2023.10.31 16:38:13 WARN  no build tool detected in workspace '/home/fyury/Desktop/mularch/mularchlabs/A2/A2'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. [0m
+Oct 31, 2023 4:38:26 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace

@@ -1,0 +1,9 @@
+{
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "utility.h": "c"
+    },
+    "files.watcherExclude": {
+        "**/target": true
+    }
+}
