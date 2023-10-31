@@ -10,7 +10,6 @@ SCIPER		: Your SCIPER numbers
 #include <stdlib.h>
 #include "utility.h"
 
-
 int perform_bucket_computation(int, int, int);
 
 int main(int argc, const char *argv[])
@@ -43,39 +42,32 @@ int main(int argc, const char *argv[])
 int perform_buckets_computation(int num_threads, int num_samples, int num_buckets)
 {
     volatile int *histogram = (int *)calloc(num_buckets, sizeof(int));
-
     int **tmp_histogram = (int **)calloc(num_threads, sizeof(int *));
 
     omp_set_num_threads(num_threads);
 
-    for (int i = 0; i < num_threads; i++)
+#pragma omp parallel num_threads(num_threads)
     {
-        tmp_histogram[i] = (int *)calloc(num_buckets, sizeof(int));
+        int *tmp_histogram = (int *)calloc(num_buckets, sizeof(int));
+        rand_gen generator = init_rand();
+
+#pragma omp for
+        for (int i = 0; i < num_samples; i++)
+        {
+            int bucket = next_rand(generator) * num_buckets;
+            tmp_histogram[bucket]++;
+        }
+#pragma omp for 
+        for (int i = 0; i < num_buckets; i++)
+        {
+            int tid;
+            for (tid = 0; tid < num_threads; tid++)
+                histogram[i] += tmp_histogram[i];
+        }
+
+        free_rand(generator);
+        free(tmp_histogram);
+
     }
-
-    rand_gen generator = init_rand();
-
-#pragma omp parallel for shared(tmp_histogram) 
-    for (int i = 0; i < num_samples; i++)
-    {
-        int tid = omp_get_thread_num();
-        int bucket = next_rand(generator) * num_buckets;
-        tmp_histogram[tid][bucket]++;
-    }
-
-
-#pragma omp parallel for shared(tmp_histogram, histogram) 
-for (int i = 0; i < num_buckets; i++)
-{   
-    int tid;
-    for (tid = 0; tid < num_threads; tid++)
-        histogram[i] += tmp_histogram[tid][i];
-    
-}
-
-
-free_rand(generator);
-free(tmp_histogram);
-
-return 0;
+        return 0;
 }
