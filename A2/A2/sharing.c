@@ -43,18 +43,29 @@ int perform_buckets_computation(int num_threads, int num_samples, int num_bucket
 {
 
     volatile int* histogram = (int *)calloc(num_buckets, sizeof(int));
+    
+    if (histogram == NULL)
+        return -1;
 
     omp_set_num_threads(num_threads);
 
 #pragma omp parallel num_threads(num_threads)
-    {
-        int *tmp_histogram = (int *)calloc(num_buckets, sizeof(int));
+    {   
+
+
+        struct tmp_histogram{
+            int *tmp_histogram;
+            int padding[64 - sizeof(int *)-1];
+        }tmp;
+
+        tmp.tmp_histogram = (int *)calloc(num_buckets, sizeof(int));
+
         rand_gen generator = init_rand();
 
         for (int i = 0; i < num_samples / num_threads; i++)
         {
             int bucket = next_rand(generator) * num_buckets;
-            tmp_histogram[bucket]++;
+            tmp.tmp_histogram[bucket]++;
         }
 
 #pragma omp for
@@ -62,11 +73,11 @@ int perform_buckets_computation(int num_threads, int num_samples, int num_bucket
         {
             int tid;
             for (tid = 0; tid < num_threads; tid++)
-                histogram[i] += tmp_histogram[i];
+                histogram[i] += tmp.tmp_histogram[i];
         }
 
         free_rand(generator);
-        free(tmp_histogram);
+        free(tmp.tmp_histogram);
     }
     return 0;
 }
