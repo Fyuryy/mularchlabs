@@ -1,10 +1,3 @@
-/*
-============================================================================
-Filename    : pi.c
-Author      : Your names goes here
-SCIPER		: Your SCIPER numbers
-============================================================================
-*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,30 +35,18 @@ int main(int argc, const char *argv[])
 int perform_buckets_computation(int num_threads, int num_samples, int num_buckets)
 {
 
-    volatile int* histogram = (int *)calloc(num_buckets, sizeof(int));
-    
-    if (histogram == NULL)
-        return -1;
-
+    int* histogram =  (int *)calloc(num_buckets, sizeof(int));
     omp_set_num_threads(num_threads);
 
 #pragma omp parallel num_threads(num_threads)
-    {   
-
-
-        struct tmp_histogram{
-            int *tmp_histogram;
-            int padding[64 - sizeof(int *)-1];
-        }tmp;
-
-        tmp.tmp_histogram = (int *)calloc(num_buckets, sizeof(int));
-
+    {
+        int *tmp_histogram = (int *)calloc(num_buckets, sizeof(int));
         rand_gen generator = init_rand();
 
         for (int i = 0; i < num_samples / num_threads; i++)
         {
             int bucket = next_rand(generator) * num_buckets;
-            tmp.tmp_histogram[bucket]++;
+            tmp_histogram[bucket]++;
         }
 
 #pragma omp for
@@ -73,11 +54,11 @@ int perform_buckets_computation(int num_threads, int num_samples, int num_bucket
         {
             int tid;
             for (tid = 0; tid < num_threads; tid++)
-                histogram[i] += tmp.tmp_histogram[i];
+               histogram[i] += tmp_histogram[i];
         }
 
         free_rand(generator);
-        free(tmp.tmp_histogram);
+        free(tmp_histogram);
     }
     return 0;
 }
