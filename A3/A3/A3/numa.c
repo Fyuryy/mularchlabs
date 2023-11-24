@@ -11,7 +11,7 @@ volatile uint8_t *arr;
 
 inline uint64_t next_addr(uint64_t i){
 
-    return (arr[i] % 7) + 1;
+    return (arr[i] + (4096 * 7)) % 7 + 1;
 }
 
 inline void init_array(rand_gen gen){
