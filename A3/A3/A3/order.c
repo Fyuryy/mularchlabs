@@ -15,7 +15,8 @@ void *thread1Func(void *param){
         t1block = true; // Set up blocker
 
         X = 1;
-        __sync_synchronize();
+        __sync_synchronize(); // Prevent any compiler reordering
+        r1 = Y;
 
         t1fin = true; // Signal iteration end
     }
