@@ -15,8 +15,7 @@ void *thread1Func(void *param){
         t1block = true; // Set up blocker
 
         X = 1;
-        asm volatile("" ::: "memory"); // Prevent any compiler reordering
-        r1 = Y;
+        __sync_synchronize();
 
         t1fin = true; // Signal iteration end
     }
@@ -29,6 +28,35 @@ void *thread2Func(void *param){
         t2block = true; // Set up blocker
 
         Y = 1;
+        __sync_synchronize(); // Prevent any compiler reordering
+        r2 = X;
+
+        t2fin = true; // Signal iteration end
+    }
+    return NULL; // Never returns
+}
+
+
+void *_thread1Func(void *param){
+    for(;;){
+        while(t1block); // Wait for blocker to be removed
+        t1block = true; // Set up blocker
+
+        X = 1;
+        asm volatile("" ::: "memory"); // Prevent any compiler reordering
+        r1 = Y;
+
+        t1fin = true; // Signal iteration end
+    }
+    return NULL; // Never returns
+}
+
+void *_thread2Func(void *param){
+    for(;;){
+        while(t2block); // Wait for blocker to be removed
+        t2block = true; // Set up blocker
+
+        Y = 1;
         asm volatile("" ::: "memory"); // Prevent any compiler reordering
         r2 = X;
 
@@ -36,6 +64,7 @@ void *thread2Func(void *param){
     }
     return NULL; // Never returns
 }
+
 
 int main(){
     //Init
