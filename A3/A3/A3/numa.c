@@ -8,18 +8,19 @@
 
 volatile uint8_t *arr;
 
-
 inline uint64_t next_addr(uint64_t i){
-
-    return (arr[i] + (4096 * 7)) % 7 + 1;
+        i = i % SIZE;
+        return  arr[i] + 128;           
 }
 
 inline void init_array(rand_gen gen){
-
     for(uint64_t i=0; i< SIZE; i++){
-        arr[i] = (uint8_t)next_rand(gen);
+        uint64_t idx = next_rand(gen) * 100000; 
+         arr[idx] = (uint8_t)next_rand(gen) * UINT8_MAX;
+
     }
 }
+
 
 int main(){
     uint64_t i, counter;    
@@ -35,7 +36,7 @@ int main(){
     set_clock();
     
     for(i=0, counter=0; i<SIZE; counter++){
-        temp = arr[i];
+        temp = arr[i];  
         i += next_addr(i);
     }
 
