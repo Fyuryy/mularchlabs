@@ -49,13 +49,31 @@ void array_process(double *input, double *output, int length, int iterations)
     }
 }
 
-_global_ void kernel(double *input, double *output, size_t length)
+__global__ void kernel(double *input, double *output, size_t length)
 {
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    int array_index = (j * ROW_SIZE) + i;
+    int index = (j * length) + i;
+
+    //*border threads can be ignored as borders are always 0.
+    if(0 < i && i < length - 1 && 0 < j && j < length - 1){
+        output[index] = (input[index - length - 1] + 
+                        input[index - length] + 
+                        input[index - length + 1] +
+                        input[index - 1] +
+                        input[index] + 
+                        input[index + 1] + 
+                        input[index + length - 1] +
+                        input[index + length] +
+                        input[index + length + 1]) / 9;
+
+    }
+
+
+
+
 }
 
 // GPU Optimized function
@@ -94,12 +112,22 @@ void GPU_array_process(double *input, double *output, int length, int iterations
     cudaEventRecord(cpy_H2D_end);
     cudaEventSynchronize(cpy_H2D_end);
     // Copy array from host to device
-    cudaEventRecord(comp_start);
+    
     /* GPU calculation goes here */
-    dim3 thrsPerBlock(4, 4); // 3x4
-    dim3 nBlks(4, 4);        // 2x3
-    kernel<<<nBlks, thrsPerBlock>>>();
-    //! must invoke our kernels here
+
+    dim3 grid(ceil(length/16), ceil(length/16), 1); // 16x16 blocks
+    dim3 threads(16, 16, 1);        
+    cudaEventRecord(comp_start);
+
+    for(int i = 0; i < iterations; i++){
+        kernel<<<grid, threads>>>(d_input, d_output, length); 
+    }
+
+    double *temp = d_input;
+    d_input = d_output;
+    d_output = temp;
+
+
     cudaEventRecord(comp_end);
     cudaEventSynchronize(comp_end);
     cudaEventRecord(cpy_D2H_start);
