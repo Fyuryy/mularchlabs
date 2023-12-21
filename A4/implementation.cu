@@ -109,12 +109,13 @@ void GPU_array_process(double *input, double *output, int length, int iterations
     
     /* GPU calculation goes here */
 
-    dim3 grid(ceil(length/16), ceil(length/16), 1); // 16x16 blocks
-    dim3 threads(16, 16, 1);        
+    dim3 nbBlocks(ceil(length/32), ceil(length/32), 1); // 16x16 blocks
+    dim3 nbThreads(32, 32, 1);   
+
     cudaEventRecord(comp_start);
 
     for(int i = 0; i < iterations; i++){
-        kernel<<<grid, threads>>>(d_input, d_output, length); 
+        kernel<<<nbBlocks, nbThreads>>>(d_input, d_output, length); 
     }
 
     double *temp = d_input;
