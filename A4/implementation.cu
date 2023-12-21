@@ -71,9 +71,6 @@ __global__ void kernel(double *input, double *output, size_t length)
 
     }
 
-
-
-
 }
 
 // GPU Optimized function
@@ -92,17 +89,19 @@ void GPU_array_process(double *input, double *output, int length, int iterations
     double *d_input, *d_output;
     size_t size = length * length * sizeof(double);
 
-    if (!cudaMalloc((void **)&d_input, size))
+    if (cudaMalloc((void **)&d_input, size) != cudaSuccess)
         return;
 
-    if (cudaMalloc((void **)&d_output, size))
+    if (cudaMalloc((void **)&d_output, size) != cudaSuccess){
         cudaFree(d_input);
-    return;
+        return;
+    }
+        
 
     cudaEventRecord(cpy_H2D_start);
 
     /* Copying array from host to device goes here */
-    if (!cudaMemcpy(d_input, input, length, cudaMemcpyHostToDevice))
+    if (cudaMemcpy(d_input, input, length, cudaMemcpyHostToDevice) != cudaSuccess)
     {
         cudaFree(d_input);
         cudaFree(d_output);
@@ -126,6 +125,7 @@ void GPU_array_process(double *input, double *output, int length, int iterations
     double *temp = d_input;
     d_input = d_output;
     d_output = temp;
+
 
 
     cudaEventRecord(comp_end);
