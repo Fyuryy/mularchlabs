@@ -58,19 +58,18 @@ __global__ void kernel(double *input, double *output, size_t length)
     int index = (j * length) + i;
 
     //*border threads can be ignored as borders are always 0.
-    if (0 < i && i < length - 1 && 0 < j && j < length - 1)
-    {
-        output[index] = (input[(i - 1) * (length) + (j - 1)] +
-                         input[(i - 1) * (length) + (j)] +
-                         input[(i - 1) * (length) + (j + 1)] +
-                         input[(i) * (length) + (j - 1)] +
-                         input[(i) * (length) + (j)] +
-                         input[(i) * (length) + (j + 1)] +
-                         input[(i + 1) * (length) + (j - 1)] +
-                         input[(i + 1) * (length) + (j)] +
-                         input[(i + 1) * (length) + (j + 1)]) /
-                        9;
-    }
+
+    output[index] = (input[(i - 1) * (length) + (j - 1)] +
+                     input[(i - 1) * (length) + (j)] +
+                     input[(i - 1) * (length) + (j + 1)] +
+                     input[(i) * (length) + (j - 1)] +
+                     input[(i) * (length) + (j)] +
+                     input[(i) * (length) + (j + 1)] +
+                     input[(i + 1) * (length) + (j - 1)] +
+                     input[(i + 1) * (length) + (j)] +
+                     input[(i + 1) * (length) + (j + 1)]) /
+                    9;
+
     output[(length / 2 - 1) * length + (length / 2 - 1)] = 1000;
     output[(length / 2) * length + (length / 2 - 1)] = 1000;
     output[(length / 2 - 1) * length + (length / 2)] = 1000;
