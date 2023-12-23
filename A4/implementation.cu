@@ -90,7 +90,6 @@ void GPU_array_process(double *input, double *output, int length, int iterations
 
     /* Preprocessing goes here */
 
-    cudaEventRecord(cpy_H2D_start);
     double *d_input, *d_output;
     size_t size = length * length * sizeof(double);
 
@@ -98,6 +97,8 @@ void GPU_array_process(double *input, double *output, int length, int iterations
     cudaMalloc((void **)&d_output, size);
 
     /* Copying array from host to device goes here */
+    cudaEventRecord(cpy_H2D_start);
+
     cudaMemcpy(d_input, input, size, cudaMemcpyHostToDevice);
 
     cudaEventRecord(cpy_H2D_end);
@@ -106,11 +107,14 @@ void GPU_array_process(double *input, double *output, int length, int iterations
 
     /* GPU calculation goes here */
 
-    dim3 nbBlocks(ceil(length / 32), ceil(length / 32), 1); // 32x32 blocks
-    dim3 nbThreads(32, 32, 1);
+    // dim3 nbBlocks(ceil(length / 32), ceil(length / 32), 1); // 32x32 blocks
+    // dim3 nbThreads(32, 32, 1);
 
-    cudaEventRecord(comp_start);
+    // We organize the thread blocks into 2D arrays of threads.
+    dim3 nbBlocks(ceil((double)length / 8), ceil((double)length / 8));
+    dim3 nbThreads(8, 8);
     double *temp;
+    cudaEventRecord(comp_start);
 
     for (int i = 0; i < iterations; i++)
     {
