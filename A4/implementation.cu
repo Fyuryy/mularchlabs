@@ -55,7 +55,7 @@ __global__ void kernel(double *input, double *output, size_t length)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    int index = (j * length) + i;
+    int index = (i * length) + j;
 
     //*border threads can be ignored as borders are always 0.
 
