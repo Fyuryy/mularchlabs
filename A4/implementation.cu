@@ -61,7 +61,6 @@ __global__ void kernel(double *input, double *output, size_t length)
 
 
     if(i < length - 1 && j < length -1 && i > 0 && j > 0){
-
     
         output[index] = (input[(i - 1) * (length) + (j - 1)] +
                      input[(i - 1) * (length) + (j)] +
@@ -104,7 +103,7 @@ void GPU_array_process(double *input, double *output, int length, int iterations
     /* Copying array from host to device goes here */
     cudaEventRecord(cpy_H2D_start);
 
-    cudaMemcpy((double*) d_input, (double*)input, size, cudaMemcpyHostToDevice);
+    cudaMemcpyAsync((double*) d_input, (double*)input, size, cudaMemcpyHostToDevice);
 
     cudaEventRecord(cpy_H2D_end);
     cudaEventSynchronize(cpy_H2D_end);
