@@ -12,6 +12,7 @@ SCIPER      : Your SCIPER number
 #include <cuda_runtime.h>
 
 #define MAX_HEAT 1000
+#define BLK_SIZE 16
 
 using namespace std;
 
@@ -49,29 +50,68 @@ void array_process(double *input, double *output, int length, int iterations)
     }
 }
 
-__global__ void kernel(double *input, double *output, size_t length)
+/*__global void kernel_shared_mem(double *input, double *output, size_t length)
 {
+
+    //*border threads can be ignored as borders are always 0.
+    extern shared double sharedMem[BLK_SIZE + 2];
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
     int index = (i * length) + j;
 
+    int sharedIndex = threadIdx.x * blockDim.y + threadIdx.y;
+    sharedMem[sharedIndex] = input[(i * length) + j];
+    syncthreads();
+
+    // Modify the computation to use shared memory
+    int sharedI;
+    int sharedJ;
+
+    if (0 < i && i < length - 1 && 0 < j && j < length - 1)
+    {
+        // Use shared memory in calculations, adjust indices appropriately
+        double sum = 0;
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                // Calculate the correct index for the shared memory
+                sharedI = threadIdx.x + x;
+                sharedJ = threadIdx.y + y;
+                int sharedIdx = sharedJ * blockDim.x + sharedI;
+                sum += sharedMem[sharedIdx];
+            }
+        }
+        output[index] = sum / 9;
+    }
+
+    output[(length / 2 - 1) * length + (length / 2 - 1)] = MAX_HEAT;
+    output[(length / 2) * length + (length / 2 - 1)] = MAX_HEAT;
+    output[(length / 2 - 1) * length + (length / 2)] = MAX_HEAT;
+    output[(length / 2) * length + (length / 2)] = MAX_HEAT;
+}
+*/
+
+__global__ void kernel(double *input, double *output, size_t length)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    int index = (i * length) + j;
+
     //*border threads can be ignored as borders are always 0.
-
-
-    if(i < length - 1 && j < length -1 && i > 0 && j > 0){
-    
-        output[index] = (input[(i - 1) * (length) + (j - 1)] +
-                     input[(i - 1) * (length) + (j)] +
-                     input[(i - 1) * (length) + (j + 1)] +
-                     input[(i) * (length) + (j - 1)] +
-                     input[(i) * (length) + (j)] +
-                     input[(i) * (length) + (j + 1)] +
-                     input[(i + 1) * (length) + (j - 1)] +
-                     input[(i + 1) * (length) + (j)] +
-                     input[(i + 1) * (length) + (j + 1)]) /
-                    9;
+    if (0 < i && i < length - 1 && 0 < j && j < length - 1)
+    {output[index] = (input[(i - 1) * (length) + (j - 1)] +
+                         input[(i - 1) * (length) + (j)] +
+                         input[(i - 1) * (length) + (j + 1)] +
+                         input[(i) * (length) + (j - 1)] +
+                         input[(i) * (length) + (j)] +
+                         input[(i) * (length) + (j + 1)] +
+                         input[(i + 1) * (length) + (j - 1)] +
+                         input[(i + 1) * (length) + (j)] + input[(i + 1) * (length) + (j + 1)]) /
+                        9;
 
         output[(length / 2 - 1) * length + (length / 2 - 1)] = MAX_HEAT;
         output[(length / 2) * length + (length / 2 - 1)] = MAX_HEAT;
@@ -103,28 +143,27 @@ void GPU_array_process(double *input, double *output, int length, int iterations
     /* Copying array from host to device goes here */
     cudaEventRecord(cpy_H2D_start);
 
-    cudaMemcpyAsync((double*) d_input, (double*)input, size, cudaMemcpyHostToDevice);
+    cudaMemcpy((double *)d_input, (double *)input, size, cudaMemcpyHostToDevice);
 
     cudaEventRecord(cpy_H2D_end);
     cudaEventSynchronize(cpy_H2D_end);
     // Copy array from host to device
-
     /* GPU calculation goes here */
 
-    // dim3 nbBlocks(ceil(length / 32), ceil(length / 32), 1); // 32x32 blocks
-    // dim3 nbThreads(32, 32, 1);
-
     // We organize the thread blocks into 2D arrays of threads.
-
-    dim3 blockD(32, 32);
-    dim3 nbThreads( (length-2) / blockD.x + 1, (length-2)  / blockD.y + 1);
+    int blocks = ceil((double)length / BLK_SIZE);
+    dim3 gridSize(blocks, blocks);
+    dim3 blockSize(BLK_SIZE, BLK_SIZE);
 
     double *temp;
     cudaEventRecord(comp_start);
+    // size_t sharedMemSize = (blockSize.x+2) * (blockSize.y+2) * sizeof(double); // blockSize = 32 if 32x32 threads
 
     for (int i = 0; i < iterations; i++)
     {
-        kernel<<<nbThreads, blockD>>>(d_input, d_output, length);
+        // kernel_shared_mem<<<gridSize, blockSize, sharedMemSize>>>(d_input, d_output, length);
+        kernel<<<gridSize, blockSize>>>(d_input, d_output, length);
+        // kernel_noif<<<gridSize, blockSize>>>(d_input, d_output, length);
 
         temp = d_input;
         d_input = d_output;
